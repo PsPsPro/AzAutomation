@@ -1,0 +1,36 @@
+name: Azure Tag Checker
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Runs every Monday at 00:00 UTC
+  workflow_dispatch:  # Allows manual triggering of the workflow
+
+jobs:
+  check-tags:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up PowerShell
+      uses: actions/setup-powershell@v1
+
+    - name: Install Azure PowerShell Module
+      run: |
+        Install-Module -Name Az -Scope CurrentUser -Force -AllowClobber
+        Import-Module Az
+
+    - name: Run Azure Tag Checker Script
+      run: pwsh CheckAzureResourcesWithoutTags.ps1 -OutputPath ./AzureResourcesWithoutTags.tsv
+      env:
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Upload Results
+      uses: actions/upload-artifact@v3
+      with:
+        name: AzureResourcesWithoutTags
+        path: ./AzureResourcesWithoutTags.tsv
